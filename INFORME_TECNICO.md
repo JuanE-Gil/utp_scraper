@@ -272,6 +272,8 @@ Cada sprint produce **documentación, casos de prueba y mockups**, no código.
 | Sprint 3 | Unificar el nombre de campo de sección como `sectionId` (fuente única de verdad) | Mantener múltiples alias (`sectionCode`, `section`) como en las demos actuales | Reduce ambigüedad en el contrato entre módulos | Abierta — requiere confirmar contra la respuesta real de la API |
 | Sprint 4 | Framework de GUI aún sin decidir (se evalúa entre `PySimpleGUI`/`FreeSimpleGUI` y `PyQt`/`PySide`) | Decidir ya el framework | Se prioriza validar el mockup y el contrato de eventos antes de comprometerse a una librería | Abierta — se cierra en Sprint 4 |
 
+> Versión formal navegable de estas decisiones (nov. 2026): [`docs/adr/README.md`](./docs/adr/README.md) — los ADRs individualizados son la versión activa; esta tabla sigue como registro histórico de origen.
+
 ### 10.1 Especificación de la máquina de estados del login (Sprint 1)
 
 ```

@@ -24,3 +24,6 @@ descargas_utp/
 # IDE
 .idea/
 .vscode/
+
+# Workspace de superpowers (scratch, no versionar)
+.superpowers/
