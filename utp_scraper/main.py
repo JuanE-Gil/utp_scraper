@@ -15,7 +15,15 @@ from utp_scraper.courses import COURSES
 from utp_scraper.ui_cli import UiState, build_view
 
 console = Console()
+
 OUTPUT_DIR = "./descargas_utp"
+
+# Legacy-Windows (cp1252): degradar glifos no-encodeables a "?" en vez de UnicodeEncodeError.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except Exception:
+        pass
 
 
 def make_handler(state: UiState, apply_view):
@@ -46,8 +54,8 @@ def main():
     creds = [os.environ.get(k, "") for k in ("AUTH_TOKEN", "USER_ID", "TENANT_ID")]
     if not all(creds):
         console.print(
-            "[bold red]⚠ Faltan credenciales: define AUTH_TOKEN, USER_ID y TENANT_ID como variables de entorno "
-            "(ver README §Seguridad — el token equivale a la contraseña).[/]"
+            "[bold red][!] Faltan credenciales: define AUTH_TOKEN, USER_ID y TENANT_ID como variables de entorno "
+            "(ver README §Seguridad: el token equivale a la contraseña).[/]"
         )
         raise SystemExit(1)
     auth_token, user_id, tenant_id = creds
