@@ -1,0 +1,16 @@
+{
+  "name": "nueva-carpeta-(3)",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Untitled-1.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "docx": "^9.7.2",
+    "pdfkit": "^0.20.2"
+  }
+}

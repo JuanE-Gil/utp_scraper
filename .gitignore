@@ -1,0 +1,26 @@
+# Dependencias y entornos
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Artefactos generados (regenerar bajo demanda)
+dist/
+
+# Credenciales y configuración local
+.env
+config_local.py
+*.token
+credentials*.json
+
+# Evidencias con datos personales (saneamiento pendiente)
+error_login.png
+utp-class.txt
+
+# Salidas de descarga del scraper
+descargas_utp/
+
+# IDE
+.idea/
+.vscode/
