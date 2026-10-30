@@ -22,6 +22,7 @@ Se escribieron dos sondas (`probe_fase1.py` y `probe_fase1b.py`) que se ejecutar
 | Ciclo vigente | `2263` — "2026 - Ciclo 2 Agosto PREG (001)". |
 | Período `9999` | Contiene **dos grupos** (`PRED/000` y `PRED/011`); nunca cuenta como ciclo vigente. |
 | Duración del token | 86 400 s (24 h), confirmado. |
+| **Login sin navegador (ROPC)** | **Sí.** Verificado 29-oct-2026 con `tools/probe_ropc_api.py`: `POST sso.../openid-connect/token` con `grant_type=password&client_id=pao-web&scope=openid ...` emite `access_token` (24 h) + `refresh_token` (25 h). Con `authorization: Bearer <token>` (prefijo obligatorio) + `user-id`/`x-tenant-id` reales, `dashboard-courses` dio **200 con los 31 cursos** — Playwright queda eliminado de Fase 3. Detalles en `docs/adr/0007-login-ropc.md`. |
 | Colisiones | 2 `courseId` aparecen en varias secciones/ciclos (ej. "Ruta Laboral" ×3, "Matemática II" ×2). No hay homónimos dentro de un mismo ciclo. |
 
 ### Código entregado (12 pruebas en verde)

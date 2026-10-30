@@ -18,6 +18,7 @@ import requests
 
 SSO_TOKEN = "https://sso.utp.edu.pe/auth/realms/Xpedition/protocol/openid-connect/token"
 API = "https://api-pao.utpxpedition.com"
+SCOPE = "openid roles-client-pao-web profile email roles-realm-xpedition"
 
 
 def jwt_payload(token: str) -> dict:
@@ -36,7 +37,7 @@ def main() -> int:
     r = requests.post(
         SSO_TOKEN,
         data={"grant_type": "password", "client_id": "pao-web",
-              "username": user, "password": password},
+              "username": user, "password": password, "scope": SCOPE},
         timeout=30,
     )
     if r.status_code != 200:
@@ -53,7 +54,8 @@ def main() -> int:
     tenant = os.environ.get("UTP_TENANT_ID", "")
     headers = {
         "accept": "*/*",
-        "authorization": tok["access_token"],
+        # El gateway exige el prefijo Bearer: sin el, responde 403 (verificado).
+        "authorization": f"Bearer {tok['access_token']}",
         "origin": "https://class.utp.edu.pe",
         "referer": "https://class.utp.edu.pe/",
         "transaction-id": "00000000-0000-0000-0000-000000000000",
