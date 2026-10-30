@@ -76,7 +76,7 @@ def _select_window(groups) -> tuple:
             for c in g["courses"]:
                 label = _course_display(g, c)
                 key = f"-C{len(order)}-"
-                rows.append([sg.Check(label, key, default=g["is_current"])])
+                rows.append([sg.Check(label, default=bool(g["is_current"]), key=key)])
                 order.append((key, c))
 
     layout = rows + [
