@@ -1,10 +1,11 @@
 {
-  "name": "nueva-carpeta-(3)",
+  "name": "utp-class-downloader-docs",
   "version": "1.0.0",
-  "description": "",
-  "main": "Untitled-1.js",
+  "description": "Regenera los informes DOCX/PDF del proyecto (dist/)",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "docs": "node index.js",
+    "test": "node index.js && echo OK"
   },
   "keywords": [],
   "author": "",

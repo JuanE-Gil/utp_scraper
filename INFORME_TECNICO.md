@@ -1,6 +1,6 @@
 # Informe Técnico — UTP+class Downloader v3
 
-**Fase actual del proyecto:** Documentación, especificación y pruebas manuales (sin implementación de código).
+**Fase actual del proyecto:** Código modular v3 con suite verde (25/25). El informe original era la fase de documentación: abajo, la correcciones fechadas reflejan los hallazgos posteriores.
 **Metodología de gestión:** Scrum simplificado (proyecto personal, un solo rol PO/Dev/SM).
 **Fecha del informe:** Septiembre 2026.
 
@@ -57,6 +57,13 @@ UTP+class es la plataforma de aprendizaje virtual de la Universidad Tecnológica
 **Conclusión del diagnóstico:** no falta tecnología nueva. Falta el **"pegamento"** entre ambas piezas: usar la salida de la autenticación (tokens + lista de cursos) como entrada de la fase de descarga, agregando un paso intermedio de selección por parte del usuario.
 
 ### Incidencias ya resueltas (heredadas del desarrollo previo)
+
+> **Corrección 2026-10-29** (verificación real con sondas, `docs/estado_proyecto_fase1.md`):
+> (a) el 500 de la API **no** se debía a `academicPeriodId`; `/course/student/courses` no es el endpoint correcto;
+> (b) el endpoint real de matrícula es `GET /learning/student/{userId}/dashboard-courses` (31 cursos, 5 ciclos, una llamada, funciona con `requests`);
+> (c) los ciclos anteriores llegan en `dashboard-courses`, no en la respuesta de `academicperiods`;
+> (d) `academicPeriodId` no es imprescindible — la clave de unión de períodos y cursos es la tupla `(period, acadCareer, module)`, y el pseudo-período `9999` nunca cuenta como ciclo vigente.
+> Las filas siguientes se conservan tal cual como registro histórico; lo vigente es este bloque.
 
 | Incidencia | Causa raíz | Solución adoptada |
 |---|---|---|
@@ -271,6 +278,8 @@ Cada sprint produce **documentación, casos de prueba y mockups**, no código.
 | Sprint 2 | Los períodos académicos anteriores se ofrecen como opción explícita, no por defecto | Mostrar siempre todos los períodos | Mantiene el flujo principal simple; el historial ya está disponible sin trabajo adicional, se agrega como mejora opcional (B5) | Cerrada |
 | Sprint 3 | Unificar el nombre de campo de sección como `sectionId` (fuente única de verdad) | Mantener múltiples alias (`sectionCode`, `section`) como en las demos actuales | Reduce ambigüedad en el contrato entre módulos | Abierta — requiere confirmar contra la respuesta real de la API |
 | Sprint 4 | Framework de GUI aún sin decidir (se evalúa entre `PySimpleGUI`/`FreeSimpleGUI` y `PyQt`/`PySide`) | Decidir ya el framework | Se prioriza validar el mockup y el contrato de eventos antes de comprometerse a una librería | Abierta — se cierra en Sprint 4 |
+
+> Versión formal navegable de estas decisiones (nov. 2026): [`docs/adr/README.md`](./docs/adr/README.md) — los ADRs individualizados son la versión activa; esta tabla sigue como registro histórico de origen.
 
 ### 10.1 Especificación de la máquina de estados del login (Sprint 1)
 

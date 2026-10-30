@@ -20,13 +20,21 @@ Regla de oro: **un solo dueño por hecho**. Donde ya existe un hecho, enlázalo;
 ## Estructura del código
 
 ```
-utp_scraper_v2.2.py   → motor de descarga v2.2 (monolítico, funcional)   [✅ implementado]
-demo_utp_auth*.py     → demos de login SSO + obtención de cursos         [✅ demo, sin integrar]
-app_it.py             → variante de trabajo del scraper                  [✅ implementado]
-tui_mockup.py         → mockup interactivo de la futura selección TUI    [📋 diseño]
+utp_scraper/          → paquete v3 (capas del INFORME §4)
+  ├── api.py          → HTTP puro: headers + get_section_full          [✅]
+  ├── downloader.py   → sanitize + extract_urls + download_file        [✅ testado]
+  ├── core.py         → collect_jobs + run_jobs (contrato de eventos) [✅ testado]
+  ├── ui_cli.py       → TUI rich.Live; consume eventos                 [✅]
+  ├── main.py         → python -m utp_scraper (credenciales por env)   [✅]
+  └── courses.py      → lista de cursos editable (placeholder Épica B)
+tests/                → pytest (tests de paridad sobre la lógica del antiguo monolito)
+demos/                → demo_utp_auth*.py (login SSO) + tui_mockup.py  [📋 demo, sin integrar]
+archive/              → material ajeno al proyecto (app_it.py)
+docs/                 → historia/ + adr/  (ver tabla de roles arriba)
+index.js + package.json → regeneran dist/ (informes PDF/DOCX): npm run docs
 ```
 
-Arquitectura objetivo (modular, para GUI): ver `INFORME_TECNICO.md` §4 — separación `auth / api / downloader / core / ui_cli / ui_gui / main` con contrato de eventos entre `core` y la presentación.
+Arquitectura objetivo (modular, para GUI): ver `INFORME_TECNICO.md` §4 — faltan las capas `auth`, `ui_gui` y un orquestador completo; llegan con la integración Épica A/B (pendiente).
 
 ## Requisitos y uso
 
