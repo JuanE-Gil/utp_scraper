@@ -4,6 +4,7 @@
 import os
 import re
 import unicodedata
+from typing import Tuple
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -38,7 +39,7 @@ def extract_urls_from_html(html: str) -> list:
     return out
 
 
-def download_file(url: str, ext: str, dest_folder: str, fallback_name: str) -> str:
+def download_file(url: str, ext: str, dest_folder: str, fallback_name: str) -> Tuple[str, str]:
     """Devuelve ('ok' | 'skip_exist' | 'error: causa', nombre_destino)."""
     os.makedirs(dest_folder, exist_ok=True)
     parsed_name = sanitize(os.path.basename(urlparse(url).path)) or f"{fallback_name}.{ext}"

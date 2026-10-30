@@ -1,6 +1,6 @@
 # Informe Técnico — UTP+class Downloader v3
 
-**Fase actual del proyecto:** Documentación, especificación y pruebas manuales (sin implementación de código).
+**Fase actual del proyecto:** Código modular v3 con suite verde (25/25). El informe original era la fase de documentación: abajo, la correcciones fechadas reflejan los hallazgos posteriores.
 **Metodología de gestión:** Scrum simplificado (proyecto personal, un solo rol PO/Dev/SM).
 **Fecha del informe:** Septiembre 2026.
 
@@ -57,6 +57,13 @@ UTP+class es la plataforma de aprendizaje virtual de la Universidad Tecnológica
 **Conclusión del diagnóstico:** no falta tecnología nueva. Falta el **"pegamento"** entre ambas piezas: usar la salida de la autenticación (tokens + lista de cursos) como entrada de la fase de descarga, agregando un paso intermedio de selección por parte del usuario.
 
 ### Incidencias ya resueltas (heredadas del desarrollo previo)
+
+> **Corrección 2026-10-29** (verificación real con sondas, `docs/estado_proyecto_fase1.md`):
+> (a) el 500 de la API **no** se debía a `academicPeriodId`; `/course/student/courses` no es el endpoint correcto;
+> (b) el endpoint real de matrícula es `GET /learning/student/{userId}/dashboard-courses` (31 cursos, 5 ciclos, una llamada, funciona con `requests`);
+> (c) los ciclos anteriores llegan en `dashboard-courses`, no en la respuesta de `academicperiods`;
+> (d) `academicPeriodId` no es imprescindible — la clave de unión de períodos y cursos es la tupla `(period, acadCareer, module)`, y el pseudo-período `9999` nunca cuenta como ciclo vigente.
+> Las filas siguientes se conservan tal cual como registro histórico; lo vigente es este bloque.
 
 | Incidencia | Causa raíz | Solución adoptada |
 |---|---|---|

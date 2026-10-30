@@ -18,6 +18,10 @@ credentials*.json
 error_login.png
 utp-class.txt
 
+# Reportes de sondas contra la plataforma real (evidencia local, no versionar)
+fase1_reporte.json
+fase1b_reporte.json
+
 # Salidas de descarga del scraper
 descargas_utp/
 

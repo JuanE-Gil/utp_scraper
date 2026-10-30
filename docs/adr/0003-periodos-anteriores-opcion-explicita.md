@@ -12,4 +12,5 @@ El flujo principal muestra **solo el período vigente**. Ver períodos anteriore
 - Mostrar siempre todos los períodos (descartada: flujo principal más ruidoso).
 
 ## Consecuencias
-- El historial de `academicPeriods` queda disponible sin trabajo adicional extra (§11.3); se implementará solo como opción explícita, no por defecto.
+- **Corregido 2026-10-29:** los ciclos anteriores llegan en la respuesta de `dashboard-courses` (misma llamada que el ciclo vigente); `academicperiods` solo aporta etiquetas legibles y cuál es el vigente. La unión períodos↔cursos se hace por la tupla `(period, acadCareer, module)` — ver `docs/estado_proyecto_fase1.md`.
+- Se implementará solo como opción explícita ("Ciclos anteriores" plegado en la GUI, INFORME/plan §6.1), no por defecto.
