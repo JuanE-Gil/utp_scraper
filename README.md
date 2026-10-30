@@ -54,7 +54,7 @@ Los pasos 1–3 se automatizarán al integrar las Épicas A/B (Fases 2–4, ver 
 
 ## 🔒 Seguridad (reglas obligatorias)
 
-- El `AUTH_TOKEN` equivale a tu contraseña mientras esté vigente (~24h). **Nunca** lo escribas en el código, en docs, ni lo subas a un repositorio; usa variables de entorno o `config_local.py` (gitignored).
+- El `AUTH_TOKEN` y la contraseña son los únicos secretos: el token equivale a tu contraseña mientras esté vigente (~24h). **Nunca** los escribas en el código, en docs, ni los subas a un repositorio; usa variables de entorno o campos de la GUI. (Verificado 29-oct-2026, ADR-0007: `user-id` es derivable y `x-tenant-id` es constante pública del front; no son secretos.)
 - La contraseña se usa solo en el instante del login: nunca en disco ni en logs.
 - Si ya publicaste un valor real en algún sitio: cierra sesión en `class.utp.edu.pe` para invalidar el token.
 - Antes de publicar: `grep` de `eyJ`, `TU_TOKEN`, `u2...` en todo el repo **y en el historial git**.
