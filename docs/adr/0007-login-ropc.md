@@ -1,7 +1,7 @@
 # ADR-0007: Login institucional por password grant (ROPC), sin navegador
 
 **Fecha:** 29 de octubre de 2026
-**Estado:** Cerrada (adoptada; evidencia directa contra producción
+- **Estado:** Cerrada (adoptada; evidencia directa contra producción)
 
 ## Contexto
 
@@ -31,11 +31,27 @@ Resultado en producción: `access_token` (24 h) + `refresh_token`
 - `authorization: Bearer <access_token>` — **el prefijo Bearer es obligatorio**;
   sin él, el gateway (403 `explicit deny in an identity-based policy`),
   con o sin las demás cabeceras correctas.
-- `user-id`, `x-tenant-id`, `user-role: STUDENT` (los de la sesión, capturados
-  de DevTools una vez; ver `docs/estado_proyecto_fase1.md`).
+- `user-id`, `x-tenant-id`, `user-role: STUDENT` (todos derivables: ver abajo).
 
 Verificado end-to-end: `GET /learning/student/{userId}/dashboard-courses`
 → 200, 31 cursos, con el token del ROPC y `requests` puro.
+
+## Derivación automática de `user-id` y `x-tenant-id`
+
+El `user-id` de la API **no es el `sub` del JWT** — se calcula de manera
+determinista (verificado con el source del SPA, `main.*.chunk.js`, y contra
+producción en línea con `tools/probe_ropc_api.py`):
+
+```python
+import uuid
+user_id = uuid.uuid5(uuid.NAMESPACE_DNS, jwt["email"].upper())
+TENANT_ID = "a5f469d2-3c0e-5c68-8d32-5265923a8e40"   # constante del front
+```
+
+- El `email` ya viene en el propio JWT del ROPC → **nada que copiar del
+  navegador**: el login queda reducido a usuario + contraseña.
+- El namespace `6ba7b810-9dad-11d1-80b4-00c04fd430c8` es el UUID-Namespace-DNS
+  estándar RFC 4122; el SPA lo genera en su bootstrap de Keycloak.
 
 ## Consecuencias
 
@@ -43,10 +59,8 @@ Verificado end-to-end: `GET /learning/student/{userId}/dashboard-courses`
   reducida a `utp_scraper/auth.py` ≈ una función `login() -> (access,
   refresh)` más `refresh()`.
 - La sesión >24 h se renueva por el refresh token (~1 llamada), sin re-login.
-- `user-id`/`x-tenant-id` no son derivables del token (el `sub` del JWT NO
-  sirve de `user-id`); deben pedirse al usuario una vez (o se obtienen luego
-  si aparece un endpoint de perfil que los devuelva — diferido).
-- Riesgo aceptado: el direct grant (`pao-web`) está habilitado hoy pero es una
+- `user-id`/`x-tenant-id` son derivables (ver sección de derivación): el
+  login pide solo usuario + contraseña; ningún ID se copia del navegador.- Riesgo aceptado: el direct grant (`pao-web`) está habilitado hoy pero es una
   decisión del proveedor; si lo desactivan, la sonda lo detecta
   (`unauthorized_client`) y se revisita la decisión.
 - La contraseña viaja en el cuerpo del POST con TLS, idéntico a ROPC estándar;
