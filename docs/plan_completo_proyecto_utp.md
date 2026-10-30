@@ -160,7 +160,7 @@ utp_scraper/
 | # | Tarea | Detalle |
 |---|---|---|
 | 2.0 | **`auth.py` (login ROPC)** | Insertada 29-oct-2026: ADR-0007 verificó que el login es `requests` puro (sin Playwright). **Hecha** y verificada contra producción (suite 32/32): `login()`/`refresh()` + `derive_user_id` = `uuid5(NAMESPACE_DNS, email)`; regla de credenciales ampliada — solo token/clave son secretos. |
-| 2.1 | Ampliar el contrato de eventos | Con pruebas unitarias que usen un `download_file` falso (sin red). |
+| 2.1 | Ampliar el contrato de eventos | **Hecha** (rama `feature/task-2.1-eventos`, suite 38/38): `course_started(curso,total)` / `file_started(week,title,filename)` / `course_finished(conteos)`; handler cuenta solo terminales. `cancelled` termina en 2.4 como en el plan. Tests sin red (`download_file` por monkeypatch). |
 | 2.2 | Mover el handler a `ui_cli` | `make_handler` y la mutación de `UiState` salen de `main.py`; `main` solo orquesta. |
 | 2.3 | **Descarga atómica** (hallazgo 9) | Escribir en `<archivo>.part` y renombrar al terminar bien; al iniciar, un `.part` huérfano se descarta. Debe estar **antes** del botón Cancelar, porque cancelar generará parciales. Prueba: corte simulado a mitad de un archivo → la siguiente ejecución lo vuelve a descargar. |
 | 2.4 | Cancelación | `run_jobs(jobs, root_dir, on_event, cancel=None)` con un `threading.Event`; se comprueba entre archivos y dentro del bucle de `chunks`; emite `cancelled`. |

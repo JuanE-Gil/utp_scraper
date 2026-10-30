@@ -44,7 +44,10 @@ def make_handler(state: UiState, apply_view):
             state.skipped_format += 1
             state.push_log(f"[dim]⏹[/] {kw.get('week')}: formato .{kw.get('ext')} fuera de lista")
         state.current_week = kw.get("week") or state.current_week
-        state.course_done += 0 if name == "course_started" else 1
+        # plan §4.1: solo los eventos terminales de archivo avanzan el progreso;
+        # file_started/course_started/course_finished no son "un archivo más".
+        if name in ("downloaded", "skipped_existing", "error", "filtered_format"):
+            state.course_done += 1
         apply_view()
 
     return on_event

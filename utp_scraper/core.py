@@ -3,6 +3,7 @@
 
 import os
 import time
+from urllib.parse import urlparse
 
 from utp_scraper.downloader import download_file, extract_urls_from_html, sanitize
 
@@ -45,18 +46,28 @@ def collect_jobs(data: dict, course_name: str, folder: str = None) -> list:
     return jobs
 
 
-def run_jobs(jobs, root_dir: str, on_event) -> dict:
+def run_jobs(jobs, root_dir: str, on_event, course: str = "") -> dict:
     """Ejecuta jobs llamando on_event(nombre_evento, **kwargs) y devolviendo conteos.
+
+    Contrato ampliado (plan §4.1): course_started(curso, total) al comenzar,
+    file_started(week, title, filename) por cada intento, y course_finished(conteos)
+    al final con las mismas conteos que retorna. `cancelled` llega en la Task 2.4.
 
     Returns: {"ok": n, "skip_exist": n, "error": n, "filtered_format": n}
     """
     counts = {"ok": 0, "skip_exist": 0, "error": 0, "filtered_format": 0}
+    on_event("course_started", curso=course, total=len(jobs))
     for week_label, title, theme_folder, url, ext in jobs:
         if ext.lower() not in DOWNLOAD_EXTENSIONS:
             counts["filtered_format"] += 1
             on_event("filtered_format", week=week_label, title=title, ext=ext)
             continue
         dest_folder = os.path.join(root_dir, theme_folder)
+        # misma regla de nombre que downloader.download_file (basename del URL,
+        # fallback sanitize(title).ext): así file_started y el evento terminal
+        # reportan el mismo filename
+        predicted = sanitize(os.path.basename(urlparse(url).path)) or f"{sanitize(title)}.{ext}"
+        on_event("file_started", week=week_label, title=title, filename=predicted)
         result, filename = download_file(url, ext, dest_folder, sanitize(title))
         if result == "ok":
             counts["ok"] += 1
@@ -69,6 +80,7 @@ def run_jobs(jobs, root_dir: str, on_event) -> dict:
             on_event("error", week=week_label, title=title, filename=filename, detail=result)
         # Pausa anti-throttle del S3; documentada, no eliminar.
         time.sleep(0.1)
+    on_event("course_finished", conteos=counts)
     return counts
 
 
