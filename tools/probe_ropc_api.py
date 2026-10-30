@@ -2,17 +2,19 @@
 """Probe: login via ROPC (sin navegador) + llamada read-only a dashboard-courses.
 
 Credenciales SOLO por variables de entorno (regla del repo):
-    UTP_USER, UTP_PASS           -> para el password grant de Keycloak
-    UTP_USER_ID, UTP_TENANT_ID   -> valores capturados del navegador (DevTools F12)
+    UTP_USER, UTP_PASS
+Con solo esas dos variables, la sonda resuelve todo lo demas sola:
+token (ROPC), user-id (uuid5(NAMESPACE_DNS, email.upper())), tenant (constante).
 
 Imprime solo estados y conteos; nunca el token, ni el password, ni los IDs completos.
-Un solo login; maximo 2 llamadas read-only con el mismo token.
+Un solo login; una llamada read-only con el mismo token.
 """
 
 import base64
 import json
 import os
 import sys
+import uuid
 
 import requests
 
@@ -48,10 +50,15 @@ def main() -> int:
     print(f"ROPC: OK (access 24h, refresh ~{refresh_hours:.1f}h, sin navegador)")
 
     sub = jwt_payload(tok["access_token"]).get("sub", "?")
+    email = jwt_payload(tok["access_token"]).get("email", "")
 
-    # 2) dashboard-courses con el mismo token (read-only)
-    user_id = os.environ.get("UTP_USER_ID", sub)
-    tenant = os.environ.get("UTP_TENANT_ID", "")
+    # El user-id real NO es el sub de Keycloak: el front lo deriva como
+    # uuid5(NAMESPACE_DNS, email.upper()) (verificado 29-oct-2026 contra
+    # el fuente del SPA). tenant-id es constante hardcodeada del front.
+    user_id = os.environ.get(
+        "UTP_USER_ID", str(uuid.uuid5(uuid.NAMESPACE_DNS, email.upper()))
+    )
+    tenant = os.environ.get("UTP_TENANT_ID", "a5f469d2-3c0e-5c68-8d32-5265923a8e40")
     headers = {
         "accept": "*/*",
         # El gateway exige el prefijo Bearer: sin el, responde 403 (verificado).

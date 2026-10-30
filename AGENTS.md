@@ -8,7 +8,7 @@ Antes de actuar, leer en este orden:
 
 ## Reglas duras (obligatorias en toda tarea)
 
-- **Credenciales**: nunca escribir `AUTH_TOKEN`, `USER_ID`, `TENANT_ID` ni IDs reales en código, docs o historial de git. El token equivale a la contraseña mientras esté vigente (~24h). Para pruebas locales: variables de entorno.
+- **Credenciales**: solo `AUTH_TOKEN` y la contraseña son secretos — nunca en código, docs ni historial de git (el token equivale a la contraseña mientras esté vigente, ~24h). `USER_ID`/`TENANT_ID` NO son secretos: verificado 29-oct-2026 (ADR-0007) que el tenant es constante pública del front y el user-id se deriva como `uuid5(NAMESPACE_DNS, email)`. Enmendar en ADR-0007, no duplicar aquí.
 - **Documentación**: un solo dueño por hecho. No duplicar contenido entre README, INFORME y ADRs; enlazar.
 - **Commits**: Conventional Commits (`feat|fix|docs|refactor|test|chore(scope): ...`); ramas `feature/*` o `develop`, nunca commit directo a `main`.
 - **Código**: Python 3.8+, las capas viven en `utp_scraper/` (arquitectura objetivo: INFORME §4). `core` no importa `rich`; la UI consume eventos.
