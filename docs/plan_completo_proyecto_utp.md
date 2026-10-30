@@ -115,7 +115,7 @@ utp_scraper/
   - `collect_jobs(data, course_name, folder=None)`: parámetro opcional; sin él se comporta como antes.
   - Sin `periods`, etiqueta "Ciclo <código>" y vigente = mayor código regular: **heurística de respaldo, no verificada**.
 - `downloader.py`: anotación corregida.
-- `tests/test_periods.py`: 12 pruebas con datos sintéticos.
+- `tests/test_period.py`: 12 pruebas con datos sintéticos.
 - ADR-0005 cerrado.
 
 ### 3.5 Pendiente para cerrar la Fase 1
@@ -436,5 +436,5 @@ Se recomienda empezar por el **contrato de eventos** (paso 2), porque desbloquea
 | `utp_scraper/api.py` | Nuevas llamadas de matrícula y períodos |
 | `utp_scraper/core.py` | Agrupación por ciclo y carpetas sin colisión |
 | `utp_scraper/downloader.py` | Anotación de retorno corregida |
-| `tests/test_periods.py` | 12 pruebas nuevas |
+| `tests/test_period.py` | 12 pruebas nuevas |
 | `docs/adr/0005-unificar-sectionId.md` | ADR cerrado |

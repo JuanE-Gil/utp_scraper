@@ -29,7 +29,7 @@ Se escribieron dos sondas (`probe_fase1.py` y `probe_fase1b.py`) que se ejecutar
 - **`utp_scraper/api.py`:** nuevas `list_dashboard_courses` y `list_academic_periods`, ambas por `user-id`.
 - **`utp_scraper/core.py`:** nueva `group_courses_by_period` (agrupa por tupla, ordena: vigente → ciclos anteriores por código descendente → 9999 al final; carpetas `<ciclo>/<curso>` sin colisiones; registros sin datos de docentes). `collect_jobs` acepta un `folder` opcional; sin él se comporta como antes.
 - **`utp_scraper/downloader.py`:** anotación de `download_file` corregida a `Tuple[str, str]` (compatible con Python 3.8).
-- **`tests/test_periods.py`:** 12 pruebas con datos sintéticos.
+- **`tests/test_period.py`:** 12 pruebas con datos sintéticos.
 - **`docs/adr/0005-unificar-sectionId.md`:** ADR cerrado con la evidencia.
 
 ### Decisiones tomadas
@@ -80,5 +80,5 @@ Cerrar los puntos 1 a 3 de la Fase 1 y arrancar la Fase 2 por el **contrato de e
 | `utp_scraper/api.py` | Nuevas llamadas de matrícula y períodos |
 | `utp_scraper/core.py` | Agrupación por ciclo y carpetas sin colisión |
 | `utp_scraper/downloader.py` | Anotación de retorno corregida |
-| `tests/test_periods.py` | 12 pruebas nuevas |
+| `tests/test_period.py` | 12 pruebas nuevas |
 | `docs/adr/0005-unificar-sectionId.md` | ADR cerrado |
