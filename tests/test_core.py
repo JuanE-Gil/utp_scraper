@@ -66,6 +66,13 @@ def test_collect_jobs_empty_course():
     assert collect_jobs({"unities": []}, "X") == []
 
 
+def test_collect_jobs_content_without_title_or_id():
+    data = _data((("FILE", None, {"url": S3, "filetype": "pdf"}),))
+    jobs = collect_jobs(data, "X")
+    assert len(jobs) == 1
+    assert jobs[0][1] == "contenido"  # fallback, nunca None -> no crash en sanitize
+
+
 def test_run_jobs_filters_redundant_format(tmp_path):
     data = _data(
         (

@@ -2,7 +2,7 @@
 
 Herramienta personal para automatizar el login y la descarga organizada de materiales académicos desde **UTP+class** (plataforma virtual de la UTP) via `api-pao.utpxpedition.com`.
 
-**Estado:** v3 en fase de documentación y especificación (Scrum simplificado). El motor de descarga (`utp_scraper_v2.2.py`) funciona; la integración login → selección de cursos → descarga está especificada pero sin implementar. Estado de avance: ver `INFORME_TECNICO.md` (Kanban §13 y Próximos pasos §16).
+**Estado:** v3 modular: suite **28/28** pytest. Estructura v3 extraída y Fase 1 verificada con sondas reales; faltan `auth` y `ui_gui` (Fases 2–4). Estado de avance: ver `docs/estado_proyecto_fase1.md` y `docs/plan_completo_proyecto_utp.md`.
 
 ---
 
@@ -43,14 +43,14 @@ pip install requests rich playwright --break-system-packages
 playwright install chromium
 ```
 
-Uso actual (manual hasta completar la integración):
+Uso actual: credenciales por variables de entorno; la lista de cursos es manual (`utp_scraper/courses.py`) hasta integrar la Épica B.
 
 1. Inicia sesión en `class.utp.edu.pe` y abre DevTools (F12) → Network → Fetch/XHR.
 2. De una petición a `api-pao.utpxpedition.com` copia `authorization` (sin `Bearer`), `user-id` y `x-tenant-id`.
-3. De "Mis cursos", copia `courseId` y `sectionId` de la URL de cada curso y complétalos en la sección `CONFIGURA ESTO` de `utp_scraper_v2.2.py`.
-4. Ejecuta el script: descarga masiva reorganizada por curso/semana/tema, sin duplicados ni ruido.
+3. Márcalas como variables de entorno, y completa `courseId`/`sectionId` (URL de "Mis cursos") en `utp_scraper/courses.py`.
+4. `python -m utp_scraper`: descarga masiva reorganizada por curso/semana/tema, sin duplicados ni ruido.
 
-Los pasos 1–3 se automatizarán al integrar las Épicas A/B del informe.
+Los pasos 1–3 se automatizarán al integrar las Épicas A/B (Fases 2–4, ver docs/plan_completo_proyecto_utp.md).
 
 ## 🔒 Seguridad (reglas obligatorias)
 

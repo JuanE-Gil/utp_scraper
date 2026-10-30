@@ -58,4 +58,10 @@ def download_file(url: str, ext: str, dest_folder: str, fallback_name: str) -> T
                         f.write(chunk)
         return "ok", parsed_name
     except Exception as e:
+        # Un corte a mitad de stream NO deja un parcial >0 como válido: se elimina.
+        try:
+            if os.path.exists(dest_path):
+                os.remove(dest_path)
+        except OSError:
+            pass
         return f"error: {e}", parsed_name
