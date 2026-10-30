@@ -28,7 +28,7 @@ def collect_jobs(data: dict, course_name: str, folder: str = None) -> list:
 
             for content in theme.get("contents", []):
                 ctype = content.get("type")
-                title = content.get("title") or content.get("contentId")
+                title = content.get("title") or content.get("contentId") or "contenido"
                 metadata = content.get("metadata", {}) or {}
 
                 urls = []

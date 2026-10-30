@@ -22,6 +22,10 @@ def test_sanitize_empty_fallback():
     assert sanitize(" ") == "sin_nombre"
 
 
+def test_sanitize_truncates_long_names():
+    assert len(sanitize("a" * 300)) == 120
+
+
 def test_extract_only_s3_with_whitelist_ext():
     html = (
         '<a href="https://utp-prd-upload-file-storage.s3.amazonaws.com/a/b.pdf">'
@@ -70,6 +74,33 @@ def test_skip_existing_zero_byte_redownloads(tmp_path, monkeypatch):
     )
     assert result == "ok"
     assert p.stat().st_size > 0
+
+
+def test_interrupted_download_leaves_no_partial(tmp_path, monkeypatch):
+    """Corte de red a mitad de stream: ni archivo parcial ni residuo."""
+    class BrokenResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+        def raise_for_status(self):
+            pass
+
+        # el primer chunk se escribe, la red cae al pedir el segundo
+        def iter_content(self, *a, **k):
+            yield b"parcial-"
+            raise ConnectionError("red caída")
+
+    monkeypatch.setattr(
+        "utp_scraper.downloader.requests.get", lambda *a, **k: BrokenResp()
+    )
+    result, name = download_file(
+        S3_URL_PDF.replace("/a/b.pdf", "/f.pdf"), "pdf", str(tmp_path), "f"
+    )
+    assert result.startswith("error:")
+    assert not list(tmp_path.iterdir())  # nada de parciales >0 ni corruptos válidos
 
 
 def test_skip_existing_nonempty(tmp_path):
