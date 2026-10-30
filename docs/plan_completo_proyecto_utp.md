@@ -159,6 +159,7 @@ utp_scraper/
 
 | # | Tarea | Detalle |
 |---|---|---|
+| 2.0 | **`auth.py` (login ROPC)** | Insertada 29-oct-2026: ADR-0007 verificó que el login es `requests` puro (sin Playwright). **Hecha** y verificada contra producción (suite 32/32): `login()`/`refresh()` + `derive_user_id` = `uuid5(NAMESPACE_DNS, email)`; regla de credenciales ampliada — solo token/clave son secretos. |
 | 2.1 | Ampliar el contrato de eventos | Con pruebas unitarias que usen un `download_file` falso (sin red). |
 | 2.2 | Mover el handler a `ui_cli` | `make_handler` y la mutación de `UiState` salen de `main.py`; `main` solo orquesta. |
 | 2.3 | **Descarga atómica** (hallazgo 9) | Escribir en `<archivo>.part` y renombrar al terminar bien; al iniciar, un `.part` huérfano se descarta. Debe estar **antes** del botón Cancelar, porque cancelar generará parciales. Prueba: corte simulado a mitad de un archivo → la siguiente ejecución lo vuelve a descargar. |
