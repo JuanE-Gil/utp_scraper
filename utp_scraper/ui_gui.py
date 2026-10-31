@@ -77,6 +77,7 @@ def _set_steps(w, cur):
 
 
 def _make_window():
+    th.theme()
     steps = [sg.Text(f"○ {name}", key=f"-STEP{i}-", font=th.CAP, text_color=th.INK3,
                      pad=(6, 4)) for i, name in enumerate(th.STEPS)]
     header = [sg.Text(th.BRAND, font=th.SEC, text_color=th.INK, pad=(0, 0)),
@@ -106,8 +107,10 @@ def _show(w, st, name, rows_fn):
         vk = f"-V{st['nc']}{name}-"
         st["nc"] += 1
         st["views"][name] = vk
-        w.extend_layout(st["body"], [[sg.Column(rows_fn(), key=vk,
-                                                background_color=th.BG, pad=(4, 0))]])
+        # sg.pin: sin él, el Column oculto sigue reservando su alto en Tk
+        w.extend_layout(st["body"], [[sg.pin(sg.Column(rows_fn(), key=vk,
+                                                       background_color=th.BG,
+                                                       pad=(4, 0)))]])
     st["cur"] = st["views"][name]
     w[st["cur"]].update(visible=True)
 
@@ -182,6 +185,8 @@ def _acceso(w, st):
         if kind is not None:
             continue
         if e in (sg.WIN_CLOSED, None):
+            return False
+        if e == sg.WIN_CLOSE_ATTEMPTED_EVENT:
             return False
         if e == sg.TIMEOUT_KEY:
             continue
@@ -306,6 +311,8 @@ def _cursos(w, st):
         while not leave:
             e, v = w.read(timeout=25)
             if e in (sg.WIN_CLOSED, None):
+                return None
+            if e == sg.WIN_CLOSE_ATTEMPTED_EVENT:
                 return None
             if e == sg.TIMEOUT_KEY:
                 continue
@@ -530,7 +537,7 @@ def _resumen(w, st, totals):
     _show(w, st, "resumen", lambda: _rows_resumen(st, p, totals))
     while True:
         e, v = w.read(timeout=25)
-        if e in (sg.WIN_CLOSED, None, f"{p}EXIT"):
+        if e in (sg.WIN_CLOSED, None, f"{p}EXIT", sg.WIN_CLOSE_ATTEMPTED_EVENT):
             return False
         if e == sg.TIMEOUT_KEY:
             continue
