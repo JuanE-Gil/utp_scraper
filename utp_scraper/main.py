@@ -54,6 +54,9 @@ def make_handler(state: UiState, apply_view):
 
 
 def main():
+    if "--gui" in sys.argv:
+        from utp_scraper.ui_gui import run
+        sys.exit(run())
     creds = [os.environ.get(k, "") for k in ("AUTH_TOKEN", "USER_ID", "TENANT_ID")]
     if not all(creds):
         console.print(
