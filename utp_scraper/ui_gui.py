@@ -44,7 +44,8 @@ def _login_window() -> "Session":
         [sg.Button("Entrar", key="-GO-"), sg.Button("Salir", key="-QUIT-")],
         [sg.Text("", size=(46, 2), key="-MSG-")],
     ]
-    w = sg.Window("Login", layout, finalize=True)
+    w = sg.Window("Login · UTP+class Downloader", layout, size=(430, 210),
+                  resizable=True, finalize=True)
     w["-USER-"].set_focus()
     session = None
     while session is None:
@@ -79,13 +80,17 @@ def _select_window(groups) -> tuple:
                 rows.append([sg.Check(label, default=bool(g["is_current"]), key=key)])
                 order.append((key, c))
 
-    layout = rows + [
-        [sg.Text("Destino"), sg.Input(DEFAULT_OUTPUT, key="-ROOT-", size=(34, 1)),
+    layout = [
+        # Lista desplazable: el destino y los botones quedan siempre a la vista.
+        [sg.Column(rows, scrollable=True, vertical_scroll_only=True,
+                   size=(580, 490), expand_x=True, expand_y=True)],
+        [sg.Text("Destino"), sg.Input(DEFAULT_OUTPUT, key="-ROOT-", size=(34, 1), expand_x=True),
          sg.FolderBrowse("Elegir...")],
         [sg.Button("Descargar", key="-DL-"), sg.Button("Ahora no", key="-QUIT-")],
         [sg.Text("", size=(50, 1), key="-MSG-")],
     ]
-    w = sg.Window("2 · Selección de cursos por ciclo", layout)
+    w = sg.Window("2 · Selección de cursos por ciclo", layout, size=(620, 640),
+                  resizable=True)
     selection, root = [], ""
     while True:
         ev, values = w.read()
@@ -121,13 +126,16 @@ def _worker(session, selection, root, q):
 def _progress_window(q):
     layout = [
         [sg.Text("", key="-CURSO-", font=("SegoeUi", 11, "bold")),
-         sg.Text("", size=(70, 1), key="-FILE-")],
-        [sg.ProgressBar(max_value=1, orientation="h", size=(62, 15), key="-PB-")],
+         sg.Text("", key="-FILE-", expand_x=True)],
+        [sg.ProgressBar(max_value=1, orientation="h", size=(62, 15),
+                        key="-PB-", expand_x=True)],
         [sg.Button("Cancelar", key="-CANCEL-", disabled=True,
                    tooltip="Se habilita con Task 2.4 (cancelación)")],
-        [sg.Multiline(size=(86, 16), key="-LOG-", autoscroll=True)],
+        [sg.Multiline(size=(86, 16), key="-LOG-", autoscroll=True,
+                      expand_x=True, expand_y=True)],
     ]
-    w = sg.Window("3 · Progreso", layout, finalize=True)
+    w = sg.Window("3 · Progreso", layout, size=(940, 560), resizable=True,
+                  finalize=True)
     done = False
     totals = {"ok": 0, "skip_exist": 0, "error": 0, "filtered_format": 0}
     # UI y cola se atienden en la misma vuelta: read(timeout=25) mantiene la
