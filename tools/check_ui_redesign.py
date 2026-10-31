@@ -38,7 +38,7 @@ cp = "C1-"
 login_rows = g._rows_acceso()
 curso_rows = g._rows_cursos(st, cp)
 desc_rows = g._rows_descarga("D1-")
-totals = {"ok": 24, "skip_exist": 3, "filtered_format": 71, "error": 0}
+totals = {"downloaded": 24, "skipped_existing": 3, "filtered_format": 71, "error": 0}
 st["selection"] = [{"name": "x"}]
 st["errores"] = []
 print("layouts OK: acceso", len(login_rows), "cursos", len(curso_rows),
@@ -82,18 +82,38 @@ assert w[c0k].widget.winfo_ismapped(), "cuerpo no re-aparece"
 assert abs(y_re - y_before) <= 8, f"reabrir no devolvio el layout: {y_re - y_before}px"
 print(f"acordeon OK (colapso libera {y_before - y_collapsed}px, reabre igual)")
 
-# 4) filtro en vivo oculta filas completas sin dejar hueco
+# 4) filtro en vivo: solo el ciclo con coincidencias queda visible y desplegado
 w[f"{cp}BQ"].update("MECANICA")
 g._apply_filter(w, st, cp, "mecanica")
 w.refresh()
-w.read(timeout=100)
+w.read(timeout=150)
+assert not w[f"{cp}G1"].widget.winfo_ismapped(), "ciclo sin match seguia visible"
+assert w[f"{cp}GC0"].widget.winfo_ismapped(), "ciclo con match no se despliega"
 w[f"{cp}BQ"].update("")
 g._apply_filter(w, st, cp, "")
 w.refresh()
-w.read(timeout=100)
-print("filtro OK")
+w.read(timeout=150)
+assert w[f"{cp}G1"].widget.winfo_ismapped(), "cabecera no volvio tras limpiar"
+assert w[f"{cp}GC1"].widget.winfo_ismapped() == 0, "estado abierto no se restauro"
+print("filtro OK (solo matchees visibles, restauracion correcta)")
 
-# 5) marco: pasos, chip, contador
+# 5) seleccion: fila pintada y nombres en la barra de accion
+ck_calc = next(ck for ck, c in st["order"] if "CALCULO" in c["name"].upper())
+w[ck_calc].update(False)  # el vigente pre-marcado: apagar CALCULO
+g._paint_rows(w, st, cp)
+g._sync_counter(w, st, cp)
+w.refresh()
+w.read(timeout=100)
+sel_txt = w[f"{cp}SEL"].get()
+assert sel_txt.startswith("1 seleccionado: ") and "MECANICA" in sel_txt, sel_txt
+rowbg = w[st["fila_map"][ck_calc]].widget.cget("background")
+assert rowbg != th.BLUE_L, "fila sin check quedo pintada"
+g_keys = [k for k, *_r in g.COUNTERS]
+assert g_keys == ["downloaded", "skipped_existing", "filtered_format", "error"], g_keys
+print("seleccion OK —", sel_txt)
+print("contadores OK (eventos core):", g_keys)
+
+# 6) marco: pasos, chip, contador
 g._set_steps(w, 1)
 g._sync_counter(w, st, cp)
 for kchip in ("-STEP0-", "-STEP1-", "-ST-", "-SESS-", f"{cp}SEL",

@@ -18,9 +18,9 @@ from utp_scraper.auth import AuthError, login
 
 DEFAULT_OUTPUT = os.path.join(os.getcwd(), "descargas_utp")
 
-# (clave de core, etiqueta TUI §9, etiqueta corta para chips, estado §5.1)
-COUNTERS = (("ok", "Descargados", "Descargados", th.OK),
-            ("skip_exist", "Ya existían", "Ya existían", th.WARN),
+# (evento de core.run_jobs §4.1, etiqueta §9, etiqueta corta para chips, estado §5.1)
+COUNTERS = (("downloaded", "Descargados", "Descargados", th.OK),
+            ("skipped_existing", "Ya existían", "Ya existían", th.WARN),
             ("filtered_format", "Filtrados por formato", "Filtrados", th.INFO),
             ("error", "Errores", "Errores", th.ERR))
 WORD = {"downloaded": ("Descargado", th.OK),
@@ -219,6 +219,7 @@ def _unbusy(w):
 def _rows_cursos(st, cp):
     st["order"] = []      # [(chk_key, curso)] del build actual
     st["gmeta"] = []      # por grupo: checks / head / col / open
+    st["fila_map"] = {}   # chk_key -> clave de la fila pin (para pintar/recolocar)
     st["cp"] = cp
     list_rows, gmeta = [], st["gmeta"]
     for gi, g in enumerate(st["groups"] or []):
@@ -226,16 +227,20 @@ def _rows_cursos(st, cp):
         for j, c in enumerate(g["courses"]):
             ck = f"{cp}K{gi}_{j}"
             cls = "Clase " + str(c["class_number"]) if c.get("class_number") else ""
+            # fuente 11 pt: el indicador Tk escala con la fuente; fondo lila
+            # marca la fila seleccionada a cada instante (r3: checks ilegibles)
             fila = sg.Column([[sg.Check(c["name"], key=ck, default=bool(g["is_current"]),
                                         enable_events=True, checkbox_color=th.BLUE,
-                                        font=th.BODY, pad=(0, 2),
+                                        font=("Segoe UI", 11), pad=(0, 2),
                                         background_color=th.BG),
                                sg.Push(),
                                th.capt(cls, p=(16, 2), tc=th.INK2)]],
-                             pad=(0, 2), key=f"{cp}R{gi}_{j}")
+                             pad=(0, 2), key=f"{cp}R{gi}_{j}",
+                             background_color=th.BLUE_L if g["is_current"] else th.BG)
             # sg.pin: fila puede ocultarse por el filtro y soltar su alto
             body.append([sg.pin(fila)])
             checks.append(ck)
+            st["fila_map"][ck] = f"{cp}R{gi}_{j}"
             st["order"].append((ck, c))
         hdr = [[th.btnT(("▾ " if g["is_current"] else "▸ ") + g["label"],
                         key=f"{cp}G{gi}", bgc=th.SURFACE_ALT),
@@ -244,8 +249,9 @@ def _rows_cursos(st, cp):
                 th.chip(f"{len(checks)} curso" + ("s" if len(checks) != 1 else "")),
                 sg.Push(),
                 th.btnT("Seleccionar todo", key=f"{cp}A{gi}", bgc=th.SURFACE_ALT)]]
-        list_rows.append([sg.Column(hdr, background_color=th.SURFACE_ALT,
-                                    pad=((0, 4), (12, 2)), expand_x=True)])
+        # sg.pin también en la fila de cabecera: el filtro la oculta completa
+        list_rows.append([sg.pin(sg.Column(hdr, background_color=th.SURFACE_ALT,
+                                           pad=((0, 4), (12, 2)), expand_x=True))])
         # sg.pin: al colapsar el ciclo, su cuerpo suelta el alto (defecto capturas)
         list_rows.append([sg.pin(sg.Column(body, key=f"{cp}GC{gi}",
                                            pad=((24, 0), (0, 8)),
@@ -275,7 +281,7 @@ def _rows_cursos(st, cp):
          sg.Input(st.get("root", DEFAULT_OUTPUT), key=f"{cp}ROOT", expand_x=True,
                   font=th.MONO, pad=(8, (12, 4))),
          sg.FolderBrowse("Cambiar", key=f"{cp}DIR", font=th.CAP, pad=(8, (12, 4)))],
-        [sg.Push(), th.capt("", key=f"{cp}SEL", p=(0, (12, 4))),
+        [th.capt("", key=f"{cp}SEL", p=(0, (12, 4)), just="left", expand_x=True),
          th.btnP("Descargar", key=f"{cp}DL", dis=True)],
     ]
 
@@ -284,12 +290,41 @@ def _selcount(w, st, cp):
     return sum(1 for ck, _c in st["order"] if ck.startswith(cp) and w[ck].get())
 
 
+def _sel_text(w, st, cp, n):
+    """'N seleccionados: <nombres, truncados con … y K más>' (r3: no solo cifra)."""
+    names = [c["name"] for ck, c in st["order"]
+             if ck.startswith(cp) and w[ck].get()]
+    label = f"{n} seleccionado" + ("s" if n != 1 else "") + ": "
+    s = ", ".join(names)
+    if len(label) + len(s) <= 110:
+        return label + s
+    out = ""
+    for i, name in enumerate(names):
+        add = (", " if out else "") + name
+        if len(label) + len(out) + len(add) > 107:
+            out += f"… y {n - i} más" if i < n else ""
+            break
+        out += add
+    return label + out
+
+
 def _sync_counter(w, st, cp):
     n = _selcount(w, st, cp)
-    w[f"{cp}SEL"].update(f"{n} seleccionado" + ("s" if n != 1 else "")
-                         if n else "Selecciona al menos un curso.")
+    w[f"{cp}SEL"].update(_sel_text(w, st, cp, n) if n
+                         else "Selecciona al menos un curso.")
     w[f"{cp}DL"].update((f"Descargar {n} curso" + ("s" if n != 1 else ""))
                         if n else "Descargar", disabled=(n == 0))
+
+
+def _paint_rows(w, st, cp):
+    """Fondo lila solo en las filas seleccionadas (r3: checks poco visibles).
+    Column.update no soporta background_color; se pinta el Frame Tk directo."""
+    for ck, rk in st["fila_map"].items():
+        if not ck.startswith(cp):
+            continue
+        bg = th.BLUE_L if w[ck].get() else th.BG
+        w[ck].update(background_color=bg)
+        w[rk].widget.configure(background=bg)
 
 
 def _cursos(w, st):
@@ -332,6 +367,8 @@ def _cursos(w, st):
             elif e == f"{p}BQ":
                 _apply_filter(w, st, p, (v.get(f"{p}BQ") or "").strip().lower())
             elif e.startswith(f"{p}G"):
+                if (v.get(f"{p}BQ") or "").strip():
+                    continue  # con búsqueda activa el filtro manda, no el acordeón
                 gi = int(e[len(p) + 1:])
                 g = st["gmeta"][gi]
                 g["open"] = not g["open"]
@@ -343,16 +380,20 @@ def _cursos(w, st):
                 on = not all(w[ck].get() for ck in g["checks"])
                 for ck in g["checks"]:
                     w[ck].update(on)
+                _paint_rows(w, st, p)
                 _sync_counter(w, st, p)
             elif e == f"{p}DL":
                 st["root"] = (v.get(f"{p}ROOT") or "").strip() or DEFAULT_OUTPUT
                 st["selection"] = [c for ck, c in st["order"] if w[ck].get()]
                 return "dl"
             elif e.startswith(f"{p}K"):
+                _paint_rows(w, st, p)
                 _sync_counter(w, st, p)
 
 
 def _apply_filter(w, st, p, query):
+    """Busca por nombre: oculta del todo los ciclos sin coincidencias y
+    despliega los que tienen; al vaciar restaura lo abierto por el usuario."""
     for gi, g in enumerate(st["gmeta"]):
         vis = 0
         for ck in g["checks"]:
@@ -361,8 +402,12 @@ def _apply_filter(w, st, p, query):
             show = query in course["name"].lower()
             w[rowkey].update(visible=show)  # fila pin completa
             vis += show
-        w[f"{p}G{gi}"].update(visible=vis > 0 or not query)
-        w[g["col"]].update(visible=vis > 0 and g["open"])
+        if query:
+            w[f"{p}G{gi}"].update(visible=vis > 0)  # cabecera fantasma fuera
+            w[g["col"]].update(visible=vis > 0)      # auto-despliega el que matchea
+        else:
+            w[f"{p}G{gi}"].update(visible=True)
+            w[g["col"]].update(visible=g["open"])
 
 
 # ─── Vista 3 · Descarga (§7.3) ───────────────────────────────────────────────
@@ -430,16 +475,14 @@ def _descarga(w, st):
         except Exception:
             pass
 
-    def finish_course(counts):
-        for k in ("ok", "skip_exist", "error", "filtered_format"):
-            totals[k] += counts.get(k, 0)
+    def advance_course():
+        # el avance global cuenta TODOS los cursos (§7.3: incluso los que fallan)
         state["cdone"] += 1
         w[f"{p}PCG"].update(f"{100 * state['cdone'] // max(csel, 1)} %")
         try:
             w[f"{p}PBG"].UpdateBar(state["cdone"], max=max(csel, 1))
         except Exception:
             pass
-        chips_refresh()
 
     while True:
         e, v = w.read(timeout=25)
@@ -482,10 +525,10 @@ def _descarga(w, st):
             w[f"{p}LOG"].print(f"Error · {kw['curso']}: contenido no disponible "
                                f"({kw['detail']})", text_color=th.ERR[1])
             errores.append(f"{kw['curso']}: {kw['detail']}")
-            finish_course({"error": 1})
+            advance_course()
             w[f"{p}FILER"].update("")
         elif ev == "course_finished":
-            finish_course(kw.get("conteos", {}))
+            advance_course()  # totales ya contados por evento, no doble conteo
             w[f"{p}FILER"].update("")
         elif ev == "fin":
             st["totals"], st["errores"] = totals, errores

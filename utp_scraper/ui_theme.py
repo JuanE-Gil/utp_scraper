@@ -80,9 +80,10 @@ def sec(s, p=((0, 0), (16, 4))):
     return sg.Text(s, font=SEC, text_color=INK, pad=p)
 
 
-def capt(s, key=None, tc=INK2, font=CAP, p=(0, 0), n=None):
+def capt(s, key=None, tc=INK2, font=CAP, p=(0, 0), n=None, just=None, expand_x=False):
     kw = {"size": n} if n is not None else {}
-    return sg.Text(s, key=key, font=font, text_color=tc, pad=p, **kw)
+    return sg.Text(s, key=key, font=font, text_color=tc, pad=p,
+                   justification=just, expand_x=expand_x, **kw)
 
 
 def txt(s, key=None, tc=None, font=BODY, expand_x=False, p=(0, 0), n=None, just=None):
