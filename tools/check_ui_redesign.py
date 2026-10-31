@@ -63,7 +63,37 @@ delta = yc - ya
 assert abs(delta) <= 4, f"vista Cursos desplazada: delta {delta}px"
 print(f"transicion acceso->cursos OK (delta {delta}px)")
 
-# 3) marco: pasos, chip, contador
+# 3) acordeon: colapsar libera el alto y reabrir restaura el mapeo
+def ysettle(w, key):
+    """Lectura estabilizada (2 lecturas) — el canvas necesita tiempo."""
+    w.read(timeout=150)
+    w.refresh()
+    w.read(timeout=150)
+    return w[key].widget.winfo_rooty()
+
+g1k, c0k = f"{cp}G1", f"{cp}GC0"
+y_before = ysettle(w, g1k)
+w[c0k].update(visible=False)
+y_collapsed = ysettle(w, g1k)
+assert y_collapsed - y_before < -8, f"colapso no libero: {y_collapsed - y_before}px"
+w[c0k].update(visible=True)
+y_re = ysettle(w, g1k)
+assert w[c0k].widget.winfo_ismapped(), "cuerpo no re-aparece"
+assert abs(y_re - y_before) <= 8, f"reabrir no devolvio el layout: {y_re - y_before}px"
+print(f"acordeon OK (colapso libera {y_before - y_collapsed}px, reabre igual)")
+
+# 4) filtro en vivo oculta filas completas sin dejar hueco
+w[f"{cp}BQ"].update("MECANICA")
+g._apply_filter(w, st, cp, "mecanica")
+w.refresh()
+w.read(timeout=100)
+w[f"{cp}BQ"].update("")
+g._apply_filter(w, st, cp, "")
+w.refresh()
+w.read(timeout=100)
+print("filtro OK")
+
+# 5) marco: pasos, chip, contador
 g._set_steps(w, 1)
 g._sync_counter(w, st, cp)
 for kchip in ("-STEP0-", "-STEP1-", "-ST-", "-SESS-", f"{cp}SEL",

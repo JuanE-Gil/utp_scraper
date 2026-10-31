@@ -108,9 +108,9 @@ def _show(w, st, name, rows_fn):
         st["nc"] += 1
         st["views"][name] = vk
         # sg.pin: sin él, el Column oculto sigue reservando su alto en Tk
-        w.extend_layout(st["body"], [[sg.pin(sg.Column(rows_fn(), key=vk,
-                                                       background_color=th.BG,
-                                                       pad=(4, 0)))]])
+        w.extend_layout(st["body"], [[sg.pin(sg.Column(
+            rows_fn(), key=vk, background_color=th.BG, pad=(4, 0),
+            expand_x=True, expand_y=True))]])
     st["cur"] = st["views"][name]
     w[st["cur"]].update(visible=True)
 
@@ -226,11 +226,15 @@ def _rows_cursos(st, cp):
         for j, c in enumerate(g["courses"]):
             ck = f"{cp}K{gi}_{j}"
             cls = "Clase " + str(c["class_number"]) if c.get("class_number") else ""
-            body.append([sg.Check(c["name"], key=ck, default=bool(g["is_current"]),
-                                  enable_events=True, checkbox_color=th.BLUE,
-                                  font=th.BODY, pad=(0, 2), background_color=th.BG),
-                         sg.Push(),
-                         th.capt(cls, p=(16, 2), tc=th.INK2)])
+            fila = sg.Column([[sg.Check(c["name"], key=ck, default=bool(g["is_current"]),
+                                        enable_events=True, checkbox_color=th.BLUE,
+                                        font=th.BODY, pad=(0, 2),
+                                        background_color=th.BG),
+                               sg.Push(),
+                               th.capt(cls, p=(16, 2), tc=th.INK2)]],
+                             pad=(0, 2), key=f"{cp}R{gi}_{j}")
+            # sg.pin: fila puede ocultarse por el filtro y soltar su alto
+            body.append([sg.pin(fila)])
             checks.append(ck)
             st["order"].append((ck, c))
         hdr = [[th.btnT(("▾ " if g["is_current"] else "▸ ") + g["label"],
@@ -242,8 +246,10 @@ def _rows_cursos(st, cp):
                 th.btnT("Seleccionar todo", key=f"{cp}A{gi}", bgc=th.SURFACE_ALT)]]
         list_rows.append([sg.Column(hdr, background_color=th.SURFACE_ALT,
                                     pad=((0, 4), (12, 2)), expand_x=True)])
-        list_rows.append([sg.Column(body, key=f"{cp}GC{gi}", pad=((24, 0), (0, 8)),
-                                    visible=bool(g["is_current"]))])
+        # sg.pin: al colapsar el ciclo, su cuerpo suelta el alto (defecto capturas)
+        list_rows.append([sg.pin(sg.Column(body, key=f"{cp}GC{gi}",
+                                           pad=((24, 0), (0, 8)),
+                                           visible=bool(g["is_current"])))])
         gmeta.append({"checks": checks, "open": bool(g["is_current"]),
                       "head": f"{cp}G{gi}", "col": f"{cp}GC{gi}"})
 
@@ -263,7 +269,7 @@ def _rows_cursos(st, cp):
         [th.ttl("Tus cursos"), sg.Push(), th.btnT("Actualizar", key=f"{cp}REFRESH")],
         [th.capt("Elige qué descargar. Se pre-marca el ciclo vigente.", p=(0, (0, 8)))],
         [sg.Input("", key=f"{cp}BQ", enable_events=True, size=(36, 1), font=th.BODY,
-                  pad=(0, (4, 8)))],
+                  pad=(0, (4, 8)), expand_x=True)],
         [scroll],
         [th.txt("Destino", p=(0, (12, 4))),
          sg.Input(st.get("root", DEFAULT_OUTPUT), key=f"{cp}ROOT", expand_x=True,
@@ -351,8 +357,9 @@ def _apply_filter(w, st, p, query):
         vis = 0
         for ck in g["checks"]:
             course = next(c for k, c in st["order"] if k == ck)
+            rowkey = f"{p}R" + ck[len(p) + 1:]  # misma j: K0_3 -> R0_3
             show = query in course["name"].lower()
-            w[ck].update(visible=show)
+            w[rowkey].update(visible=show)  # fila pin completa
             vis += show
         w[f"{p}G{gi}"].update(visible=vis > 0 or not query)
         w[g["col"]].update(visible=vis > 0 and g["open"])
