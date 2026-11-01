@@ -389,7 +389,7 @@ def _cursos(w, st):
             if st["groups"] is None:
                 if sg.popup_yes_no("No se pudo listar la matrícula: "
                                    + (st["ferr"] or "") + "\n¿Volver al acceso?",
-                                   title="Matrícula", default_button="Reintentar") == "Yes":
+                                   title="Matrícula") == "Yes":
                     return "out"
                 continue
             st["views"].pop("cursos", None)  # fuerza rebuild el build con datos
@@ -549,8 +549,7 @@ def _descarga(w, st):
         if e == sg.WIN_CLOSE_ATTEMPTED_EVENT:
             if sg.popup_yes_no(
                     "Hay una descarga en curso. ¿Salir de todos modos? "
-                    "Lo ya descargado se conserva.", title="Salir",
-                    default_button="No") == "Yes":
+                    "Lo ya descargado se conserva.", title="Salir") == "Yes":
                 return None
             continue
         if ev is None:
