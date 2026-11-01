@@ -25,8 +25,9 @@ fase1b_reporte.json
 # Salidas de descarga del scraper
 descargas_utp/
 
-# IDE
-.idea/
+# IDE (se comparte solo lo de runConfigurations, no workspace.xml ni caches)
+.idea/*
+!.idea/runConfigurations/
 .vscode/
 
 # Workspace de superpowers (scratch, no versionar)
