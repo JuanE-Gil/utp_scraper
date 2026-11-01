@@ -1,6 +1,7 @@
 # utp_scraper.ui_gui — GUI v2 (rediseño D1–D4 del plan de diseño, nivel Tk A).
 # Una sola ventana con 4 vistas intercambiables sobre un marco persistente (§6):
-# cabecera con marca + pasos + chip de sesión, pie con versión y estado breve.
+# barra lateral oscura (marca, pasos, sesión, versión y estado) + panel de contenido blanco.
+# Estilo v2 "editorial": toda la apariencia vive en ui_theme / ui_assets; aquí solo composición.
 # Solo consume auth/api/core por el contrato de eventos: cero lógica de descargas aquí.
 # Concurrencia: login y descarga corren en hilos; la GUI drena queue.Queue desde
 # su propio bucle read(timeout=) y nunca se bloquea.
@@ -68,34 +69,62 @@ def _worker(session, selection, root, q):
 
 # ─── Marco persistente (§6.2) ────────────────────────────────────────────────
 
+_NAV_ICON = ("key", "book", "dl", "ok")
+
+
 def _set_steps(w, cur):
+    """Estado visual de cada paso en la barra lateral: hecho / actual / pendiente."""
     for i, name in enumerate(th.STEPS):
+        done, now = i < cur, i == cur
+        bg = th.SIDE_HI if now else th.SIDE
+        ic = "nav_done" if done else f"nav_{_NAV_ICON[i]}_{'on' if now else 'dim'}"
+        w[f"-STEPI{i}-"].update(data=th.ui_assets.get(ic))
+        w[f"-STEPI{i}-"].widget.configure(background=bg)
         w[f"-STEP{i}-"].update(
-            ("✓ " if i < cur else "● " if i == cur else "○ ") + name,
-            text_color=(th.VIOL if i < cur else th.BLUE if i == cur else th.INK3),
-            font=("Segoe UI", 9, "bold" if i <= cur else "normal"))
+            name, background_color=bg,
+            text_color=(th.SIDE_DONE if done else th.WHITE if now else th.SIDE_DIM),
+            font=(th.FONT, 10, "bold" if now else "normal"))
+        w[f"-STEPR{i}-"].widget.configure(background=bg)
 
 
 def _make_window():
     th.theme()
-    steps = [sg.Text(f"○ {name}", key=f"-STEP{i}-", font=th.CAP, text_color=th.INK3,
-                     pad=(6, 4)) for i, name in enumerate(th.STEPS)]
-    header = [sg.Text(th.BRAND, font=th.SEC, text_color=th.INK, pad=(0, 0)),
-              sg.Push(), *steps, sg.Push(),
-              sg.Text("", key="-SESS-", font=th.CAP, text_color=th.INK2, pad=(8, 4)),
-              th.btnT("Cerrar sesión", key="-LOGOUT-", visible=False)]
-    body = sg.Column([[sg.Text("", visible=False)]], key="-BODY-",
+    nav = []
+    for i, name in enumerate(th.STEPS):
+        nav.append([sg.Column(
+            [[th.icon(f"nav_{_NAV_ICON[i]}_dim", bg=th.SIDE, key=f"-STEPI{i}-", p=((16, 0), (9, 9))),
+              sg.Text(name, key=f"-STEP{i}-", font=(th.FONT, 10), text_color=th.SIDE_DIM,
+                      background_color=th.SIDE, pad=((12, 8), (9, 9)), expand_x=True)]],
+            key=f"-STEPR{i}-", background_color=th.SIDE, pad=((10, 10), (2, 2)), expand_x=True)])
+    brand = sg.Column(
+        [[th.txt("UTP+class", font=th.SEC, tc=th.SIDE_TXT, bg=th.SIDE, p=((12, 0), (28, 0)))],
+         [th.capt("Downloader", tc=th.SIDE_MUTED, bg=th.SIDE, p=((12, 0), (0, 0)))]],
+        background_color=th.SIDE, pad=(0, 0))
+    side = sg.Column(
+        [[th.icon("mark40", bg=th.SIDE, p=((20, 0), (26, 0))), brand],
+         [th.label("Pasos", p=((22, 0), (30, 8)), bg=th.SIDE, tc=th.SIDE_DIM)],
+         *nav,
+         [sg.VPush(background_color=th.SIDE)],
+         [th.hr(th.SIDE_LINE, p=((20, 20), (0, 0)))],
+         [th.txt("", key="-SESS-", font=th.CAP, tc=th.SIDE_MUTED, bg=th.SIDE,
+                 p=((22, 8), (14, 2)))],
+         [th.btnT("Cerrar sesión", key="-LOGOUT-", bgc=th.SIDE, fg=th.SIDE_MUTED,
+                  hover=(th.WHITE, th.SIDE_HI), p=((14, 0), (0, 4)), visible=False)],
+         [th.hr(th.SIDE_LINE, p=((20, 20), (8, 12)))],
+         [th.capt(th.VERSION, tc=th.SIDE_DIM, bg=th.SIDE, p=((22, 0), (0, 2)))],
+         [th.capt("", key="-ST-", tc=th.SIDE_MUTED, bg=th.SIDE, p=((22, 0), (0, 22)))]],
+        background_color=th.SIDE, size=(232, 100), pad=(0, 0), expand_y=True)
+    body = sg.Column([[sg.Text("", visible=False, background_color=th.BG)]], key="-BODY-",
+                     background_color=th.BG, pad=((40, 40), (32, 24)),
                      expand_x=True, expand_y=True)
-    footer = [th.capt(th.VERSION, p=(0, 0)), sg.Push(),
-              sg.Text("", key="-ST-", font=th.CAP, text_color=th.INK2, pad=(0, 0))]
     w = sg.Window(
         th.BRAND + " — Acceso · Cursos · Descarga · Resumen",
-        [[sg.Column([header], background_color=th.BG, pad=(0, 8), expand_x=True)],
-         [body],
-         [sg.Column([footer], background_color=th.BG, pad=(0, 8), expand_x=True)]],
-        size=(1040, 720), resizable=True, margins=(24, 16),
+        [[side, sg.Column([[body]], background_color=th.BG, pad=(0, 0),
+                          expand_x=True, expand_y=True)]],
+        size=(1120, 740), resizable=True, margins=(0, 0),
         enable_close_attempted_event=True, finalize=True)
-    w.set_min_size((860, 680))
+    w.set_min_size((940, 680))
+    th.polish(w)
     return w
 
 
@@ -107,10 +136,12 @@ def _show(w, st, name, rows_fn):
         vk = f"-V{st['nc']}{name}-"
         st["nc"] += 1
         st["views"][name] = vk
-        # sg.pin: sin él, el Column oculto sigue reservando su alto en Tk
+        # sg.pin: sin él, el Column oculto sigue reservando su alto en Tk; con expand_x/y el
+        # contenido puede centrarse (Push/VPush) dentro del panel.
         w.extend_layout(st["body"], [[sg.pin(sg.Column(
-            rows_fn(), key=vk, background_color=th.BG, pad=(4, 0),
+            rows_fn(), key=vk, background_color=th.BG, pad=(0, 0),
             expand_x=True, expand_y=True))]])
+        th.polish(w)
     st["cur"] = st["views"][name]
     w[st["cur"]].update(visible=True)
 
@@ -118,21 +149,30 @@ def _show(w, st, name, rows_fn):
 # ─── Vista 1 · Acceso (§7.1) ─────────────────────────────────────────────────
 
 def _rows_acceso():
-    card = th.card([
-        [th.ttl("Inicia sesión", p=(0, (8, 4)))],
-        [th.capt("Usa tu código y clave de UTP+class", p=(0, (0, 16)))],
-        [th.txt("Código de usuario", p=(0, (12, 4)))],
-        [sg.Input("", key="-USER-", size=(26, 1), font=th.BODY, pad=(0, 4))],
-        [th.txt("Contraseña", p=(0, (12, 4)))],
-        [sg.Input("", key="-PASS-", size=(24, 1), font=th.BODY, pad=(0, 6),
-                  password_char="•"),
-         th.btnT("Ver", key="-EYE-", p=(8, (12, 6)))],
+    arte = sg.Column(
+        [[th.icon("art", bg=th.PANEL, p=((20, 20), (40, 12)))],
+         [th.capt("Tus cursos, ordenados por ciclo y semana.", tc=th.INK2, bg=th.PANEL,
+                  just="center", p=((0, 0), (0, 40)))]],
+        background_color=th.PANEL, pad=(0, 0), element_justification="center",
+        vertical_alignment="top")
+    form = sg.Column([
+        [th.ttl("Inicia sesión", p=(0, (4, 2)))],
+        [th.capt("Usa tu código y clave de UTP+class", p=(0, (0, 20)))],
+        [th.txt("Código de usuario", font=th.CAP_B, tc=th.INK2, p=(0, (0, 4)))],
+        [th.inp("-USER-", size=(28, 1), font=(th.FONT, 11), pad=(0, (0, 14)), expand_x=True)],
+        [th.txt("Contraseña", font=th.CAP_B, tc=th.INK2, p=(0, (0, 4)))],
+        [th.inp("-PASS-", size=(24, 1), font=(th.FONT, 11), pad=(0, (0, 6)), password=True,
+                expand_x=True),
+         th.ibtn("eye", key="-EYE-", tip="Mostrar u ocultar la contraseña", p=((6, 0), (0, 6)))],
         # espacio reservado: el formulario no cambia de alto al aparecer un error (§7.1)
-        [sg.Text("", key="-MSG-", size=(44, 2), font=th.CAP, pad=(0, (8, 0)))],
+        [sg.Text("", key="-MSG-", size=(40, 3), font=th.CAP, text_color=th.INK2,
+                 background_color=th.BG, pad=(0, (8, 12)), metadata="MSG")],
         [th.btnP("Entrar", key="-GO-", expand_x=True, brk=True)],
-        [th.capt("Tu contraseña no se guarda. Solo se accede a tus propios cursos.",
-                 p=(0, (12, 8)))],
-    ])
+        [th.icon("lock", p=(0, (16, 0))),
+         th.capt("Tu contraseña no se guarda. Solo se accede a tus propios cursos.",
+                 p=((8, 0), (16, 0)))],
+    ], background_color=th.BG, pad=(38, 32), vertical_alignment="top")
+    card = th.card([[arte, form]], inner=(0, 0), p=(0, 0))
     return [[sg.VPush()],
             [sg.Push(), card, sg.Push()],
             [sg.VPush()]]
@@ -156,7 +196,7 @@ def _acceso(w, st):
     w["-SESS-"].update("")
     w["-LOGOUT-"].update(visible=False)
     w["-ST-"].update("Sin sesión")
-    w["-MSG-"].update("", text_color=th.INK2)
+    th.set_msg(w["-MSG-"], "")
     w["-USER-"].update("", disabled=False)
     w["-PASS-"].update("", disabled=False)
     w["-GO-"].update("Entrar", disabled=False)
@@ -177,9 +217,8 @@ def _acceso(w, st):
             w["-ST-"].update("Sesión activa")
             return True
         if kind == "err":
-            w["-MSG-"].update(text_color=th.ERR[1],
-                              value=f"{payload} No se reintentará automáticamente "
-                                    "para evitar bloquear tu cuenta.")
+            th.set_msg(w["-MSG-"], f"{payload} No se reintentará automáticamente "
+                                   "para evitar bloquear tu cuenta.", th.ERR)
             _unbusy(w)
             continue
         if kind is not None:
@@ -193,14 +232,15 @@ def _acceso(w, st):
         if e == "-EYE-":
             eye_open = not eye_open
             w["-PASS-"].update(password_char="" if eye_open else "•")
+            w["-EYE-"].update(image_data=th.ui_assets.get("eye_off" if eye_open else "eye"))
             continue
         if e in ("-GO-", "-USER-", "-PASS-"):
             user = (v.get("-USER-") or "").strip()
             pwd = v.get("-PASS-") or ""
             if not user or not pwd:
-                w["-MSG-"].update("Completa tu código y tu contraseña.")
+                th.set_msg(w["-MSG-"], "Completa tu código y tu contraseña.", th.WARN)
                 continue
-            w["-MSG-"].update("")
+            th.set_msg(w["-MSG-"], "")
             w["-GO-"].update("Autenticando…", disabled=True)
             w["-USER-"].update(disabled=True)
             w["-PASS-"].update(disabled=True)
@@ -224,39 +264,42 @@ def _rows_cursos(st, cp):
     list_rows, gmeta = [], st["gmeta"]
     for gi, g in enumerate(st["groups"] or []):
         checks, body = [], []
+        cur = bool(g["is_current"])
         for j, c in enumerate(g["courses"]):
             ck = f"{cp}K{gi}_{j}"
             cls = "Clase " + str(c["class_number"]) if c.get("class_number") else ""
-            # fuente 11 pt: el indicador Tk escala con la fuente; fondo lila
-            # marca la fila seleccionada a cada instante (r3: checks ilegibles)
-            fila = sg.Column([[sg.Check(c["name"], key=ck, default=bool(g["is_current"]),
-                                        enable_events=True, checkbox_color=th.BLUE,
-                                        font=("Segoe UI", 11), pad=(0, 2),
-                                        background_color=th.BG),
-                               sg.Push(),
-                               th.capt(cls, p=(16, 2), tc=th.INK2)]],
-                             pad=(0, 2), key=f"{cp}R{gi}_{j}",
-                             background_color=th.BLUE_L if g["is_current"] else th.BG)
+            bgc = th.SEL if cur else th.BG
+            # fuente 11 pt: el indicador Tk escala con la fuente. La fila ocupa todo el ancho
+            # y su fondo (tinte de selección) se repinta entero en _paint_rows.
+            fila = sg.Column(
+                [[sg.Check(c["name"], key=ck, default=cur, enable_events=True,
+                           checkbox_color=th.BLUE, font=(th.FONT, 11), text_color=th.INK,
+                           pad=((14, 0), (7, 7)), background_color=bgc),
+                  sg.Push(background_color=bgc),
+                  th.capt(cls, p=(16, 7), tc=th.INK2, bg=bgc)],
+                 [th.hr()]],
+                pad=(0, 0), key=f"{cp}R{gi}_{j}", background_color=bgc, expand_x=True)
             # sg.pin: fila puede ocultarse por el filtro y soltar su alto
-            body.append([sg.pin(fila)])
+            body.append([sg.pin(fila, expand_x=True)])
             checks.append(ck)
             st["fila_map"][ck] = f"{cp}R{gi}_{j}"
             st["order"].append((ck, c))
-        hdr = [[th.btnT(("▾ " if g["is_current"] else "▸ ") + g["label"],
-                        key=f"{cp}G{gi}", bgc=th.SURFACE_ALT),
-                th.chip("vigente", (th.VIOL_L, th.VIOL_D)) if g["is_current"]
-                else sg.Text("", pad=(2, 2)),
+        hb = th.SURFACE_ALT
+        hdr = [[th.btnT(("▾ " if cur else "▸ ") + g["label"], key=f"{cp}G{gi}", bgc=hb,
+                        fg=th.INK, hover=(th.INK, th.BORDER), p=((8, 4), (6, 6))),
+                th.chip("vigente", (th.VIOL_L, th.VIOL_D)) if cur
+                else sg.Text("", background_color=hb, pad=(2, 2)),
                 th.chip(f"{len(checks)} curso" + ("s" if len(checks) != 1 else "")),
-                sg.Push(),
-                th.btnT("Seleccionar todo", key=f"{cp}A{gi}", bgc=th.SURFACE_ALT)]]
+                sg.Push(background_color=hb),
+                th.btnT("Seleccionar todo", key=f"{cp}A{gi}", bgc=hb, p=((4, 10), (6, 6)))]]
         # sg.pin también en la fila de cabecera: el filtro la oculta completa
-        list_rows.append([sg.pin(sg.Column(hdr, background_color=th.SURFACE_ALT,
-                                           pad=((0, 4), (12, 2)), expand_x=True))])
+        list_rows.append([sg.pin(sg.Column(hdr, background_color=hb, pad=((0, 0), (14, 0)),
+                                           expand_x=True), expand_x=True)])
         # sg.pin: al colapsar el ciclo, su cuerpo suelta el alto (defecto capturas)
-        list_rows.append([sg.pin(sg.Column(body, key=f"{cp}GC{gi}",
-                                           pad=((24, 0), (0, 8)),
-                                           visible=bool(g["is_current"])))])
-        gmeta.append({"checks": checks, "open": bool(g["is_current"]),
+        list_rows.append([sg.pin(sg.Column(body, key=f"{cp}GC{gi}", pad=(0, (0, 6)),
+                                           background_color=th.BG, expand_x=True,
+                                           visible=cur), expand_x=True)])
+        gmeta.append({"checks": checks, "open": cur,
                       "head": f"{cp}G{gi}", "col": f"{cp}GC{gi}"})
 
     if not list_rows:
@@ -269,19 +312,27 @@ def _rows_cursos(st, cp):
             f"(sin identificador válido): {names}", estado=th.WARN)])
 
     scroll = sg.Column(list_rows, scrollable=True, vertical_scroll_only=True,
-                       size=(940, 400), expand_x=True, expand_y=True,
-                       sbar_trough_color=th.SURFACE_ALT, sbar_arrow_color=th.INK2)
+                       size=(780, 300), expand_x=True, expand_y=True, pad=(0, 0),
+                       background_color=th.BG, sbar_trough_color=th.SURFACE_ALT,
+                       sbar_background_color=th.BORDER_IN, sbar_arrow_color=th.INK2,
+                       sbar_width=10, sbar_relief=sg.RELIEF_FLAT)
     return [
-        [th.ttl("Tus cursos"), sg.Push(), th.btnT("Actualizar", key=f"{cp}REFRESH")],
-        [th.capt("Elige qué descargar. Se pre-marca el ciclo vigente.", p=(0, (0, 8)))],
-        [sg.Input("", key=f"{cp}BQ", enable_events=True, size=(36, 1), font=th.BODY,
-                  pad=(0, (4, 8)), expand_x=True)],
+        [th.ttl("Tus cursos"), sg.Push(),
+         th.icon("refresh", p=((0, 0), (10, 0))),
+         th.btnT("Actualizar", key=f"{cp}REFRESH", p=((0, 0), (10, 0)))],
+        [th.capt("Elige qué descargar. Se pre-marca el ciclo vigente.", p=(0, (2, 14)))],
+        [th.search_field(f"{cp}BQ")],
+        [sg.Sizer(0, 10)],
         [scroll],
-        [th.txt("Destino", p=(0, (12, 4))),
-         sg.Input(st.get("root", DEFAULT_OUTPUT), key=f"{cp}ROOT", expand_x=True,
-                  font=th.MONO, pad=(8, (12, 4))),
-         sg.FolderBrowse("Cambiar", key=f"{cp}DIR", font=th.CAP, pad=(8, (12, 4)))],
-        [th.capt("", key=f"{cp}SEL", p=(0, (12, 4)), just="left", expand_x=True),
+        [th.hr(p=((0, 0), (12, 0)))],
+        [th.icon("folder", p=((0, 8), (14, 0))),
+         th.txt("Destino", font=th.CAP_B, tc=th.INK2, p=((0, 10), (14, 0))),
+         th.inp(f"{cp}ROOT", size=(40, 1), font=th.MONO, pad=((0, 10), (12, 0)), expand_x=True,
+                default=st.get("root", DEFAULT_OUTPUT)),
+         sg.FolderBrowse("Cambiar", key=f"{cp}DIR", font=th.CAP_B, border_width=0,
+                         button_color=(th.BLUE, th.SURFACE), mouseover_colors=(th.BLUE, th.BLUE_L),
+                         pad=((0, 0), (12, 0)), metadata="S")],
+        [th.capt("", key=f"{cp}SEL", p=(0, (16, 0)), just="left", expand_x=True),
          th.btnP("Descargar", key=f"{cp}DL", dis=True)],
     ]
 
@@ -317,14 +368,14 @@ def _sync_counter(w, st, cp):
 
 
 def _paint_rows(w, st, cp):
-    """Fondo lila solo en las filas seleccionadas (r3: checks poco visibles).
-    Column.update no soporta background_color; se pinta el Frame Tk directo."""
+    """Tinte de selección en TODA la fila (fondo, huecos y etiquetas); la línea fina inferior
+    conserva su color. Column.update no soporta background_color: se pinta el árbol Tk."""
     for ck, rk in st["fila_map"].items():
         if not ck.startswith(cp):
             continue
-        bg = th.BLUE_L if w[ck].get() else th.BG
+        bg = th.SEL if w[ck].get() else th.BG
         w[ck].update(background_color=bg)
-        w[rk].widget.configure(background=bg)
+        th.paint_tree(w[rk].widget, bg)
 
 
 def _cursos(w, st):
@@ -415,19 +466,20 @@ def _apply_filter(w, st, p, query):
 def _rows_descarga(p):
     def bar(k):
         # expand_x: la pista llena el ancho de la tarjeta (r4: banda blanca muerta)
-        return sg.ProgressBar(max_value=1, bar_color=(th.BLUE, th.BAR_TRACK),
-                              size=(430, 12), key=k, pad=(0, 4), expand_x=True)
+        return sg.ProgressBar(max_value=1, bar_color=(th.BLUE, th.BAR_TRACK), border_width=0,
+                              size=(430, 14), key=k, pad=(0, 8), expand_x=True)
 
     chips = [th.chip(f"0 · {lbl}", (th.BORDER, th.INK3), key=f"{p}CH{i}")
              for i, (_k, _t, lbl, _e) in enumerate(COUNTERS)]
     log = sg.Multiline("", key=f"{p}LOG", autoscroll=True, font=th.MONO,
-                       background_color=th.SURFACE_ALT, text_color=th.INK,
-                       size=(96, 10), pad=(0, 4))
+                       background_color=th.SURFACE_ALT, text_color=th.INK, border_width=0,
+                       size=(80, 9), pad=(0, 4), expand_x=True, metadata="LOG")
     return [
         [th.ttl("Descargando")],
+        [sg.Sizer(0, 14)],
         [th.card([
             [th.txt("Avance general", font=th.SEC), sg.Push(),
-             th.capt("0 %", key=f"{p}PCG", font=("Segoe UI", 12), tc=th.INK)],
+             th.capt("0 %", key=f"{p}PCG", font=(th.FONT, 14, "bold"), tc=th.INK)],
             [bar(f"{p}PBG")],
             [th.capt("", key=f"{p}GEN")],
         ])],
@@ -435,11 +487,12 @@ def _rows_descarga(p):
             [th.txt("", key=f"{p}CURSO", font=th.SEC, expand_x=True), sg.Push(),
              th.capt("", key=f"{p}PCC")],
             [bar(f"{p}PBC")],
-            [th.txt("", key=f"{p}FILER", font=th.MONO, n=(60, 1))],
-        ], p=((0, 0), (10, 1)))],
+            [th.txt("", key=f"{p}FILER", font=th.MONO, n=(60, 1), tc=th.INK2)],
+        ], p=(0, 6))],
         [sg.Push(), *chips],
         [sg.Push(), th.btnT("Ver detalle", key=f"{p}LOGT")],
-        [sg.pin(sg.Column([[log]], key=f"{p}LOGC", pad=((0, 0), (0, 8))))],
+        [sg.pin(sg.Column([[log]], key=f"{p}LOGC", pad=(0, (0, 8)), background_color=th.BG,
+                          expand_x=True), expand_x=True)],
     ]
 
 
@@ -542,30 +595,26 @@ def _rows_resumen(st, p, totals):
     err_n = totals.get("error", 0)
     title = "Descarga completada con errores" if err_n else "Descarga completada"
     rows = [
-        [th.ttl(title)],  # nivel A: sin icono; el color lo dan los estados
-        [th.capt(f"{len(st.get('selection') or [])} cursos procesados en "
-                 f"{os.path.basename(os.path.abspath(st['root']))}",
-                 tc=th.INK2, p=(0, (0, 16)))],
+        [th.icon("badge_warn" if err_n else "badge_ok", p=((0, 18), (0, 0))),
+         sg.Column([[th.ttl(title)],
+                    [th.capt(f"{len(st.get('selection') or [])} cursos procesados en "
+                             f"{os.path.basename(os.path.abspath(st['root']))}",
+                             tc=th.INK2, p=(0, (4, 0)))]],
+                   background_color=th.BG, pad=(0, 0))],
+        [sg.Sizer(0, 24)],
     ]
 
     def stat(k, lbl, est):
-        """Columna apilada: cifra 22pt + etiqueta debajo, centrada."""
+        """Tarjeta de cifra: fondo suave del estado (neutro si es 0), cifra grande + etiqueta."""
         zero = totals[k] == 0
-        tc = th.INK3 if zero else est[1]
-        col_rows = [[th.txt(str(totals[k]), font=th.FIG, tc=tc,
-                            just="center", p=(0, (2, 2)))]]
-        for word in lbl.replace("por formato", "por\nformato").split("\n"):
-            col_rows.append([th.capt(word, tc=tc, just="center", p=(0, 0))])
-        return sg.Column(col_rows, pad=(36, 8))
+        bgc, tc = (th.SURFACE_ALT, th.INK3) if zero else est
+        return sg.Column(
+            [[th.txt(str(totals[k]), font=th.FIG, tc=tc, bg=bgc, just="center",
+                     p=((26, 26), (16, 0)))],
+             [th.capt(lbl, tc=tc, bg=bgc, just="center", p=((26, 26), (0, 18)))]],
+            background_color=bgc, pad=(7, 0), element_justification="center")
 
-    cards = []
-    for k, lbl, _c, est in COUNTERS:
-        cards.append(stat(k, lbl, est))
-    stats = [sg.Push(), sg.Column([[sg.Push(), *cards, sg.Push()]],
-                                  background_color=th.SURFACE, pad=(24, 16)),
-             sg.Push()]
-    rows.append([sg.Column([stats], background_color=th.BORDER, pad=(1, 1),
-                           expand_x=True)])
+    rows.append([sg.Push(), *[stat(k, lbl, est) for k, lbl, _c, est in COUNTERS], sg.Push()])
     # nota de contexto: qué significa cada cifra (solo si hubo actividad mixta)
     if err_n:
         err_rows = [[th.capt("— " + s, tc=th.ERR[1], p=(0, 2))]
@@ -573,15 +622,18 @@ def _rows_resumen(st, p, totals):
         rows += [
             [sg.Push(), sg.pin(sg.Column(err_rows, key=f"{p}ERRC", pad=((0, 0), (8, 8)),
                                          scrollable=True, vertical_scroll_only=True,
+                                         background_color=th.BG,
                                          size=(560, min(20 * max(len(err_rows), 1), 180)),
                                          visible=False))],
             [sg.Push(), th.btnT(f"Ver errores ({err_n})", key=f"{p}ERBT"), sg.Push()],
         ]
 
     rows += [
-        [th.txt("Carpeta:", p=(0, (16, 4))),
-         th.capt(os.path.abspath(st["root"]), tc=th.INK2, expand_x=True,
-                 p=(8, (16, 4)))],
+        [th.hr(p=((0, 0), (26, 0)))],
+        [th.icon("folder", p=((0, 8), (16, 0))),
+         th.txt("Carpeta", font=th.CAP_B, tc=th.INK2, p=((0, 10), (16, 0))),
+         th.capt(os.path.abspath(st["root"]), tc=th.INK2, expand_x=True, font=th.MONO,
+                 p=(0, (16, 0)))],
         [th.btnP("Abrir carpeta", key=f"{p}OPEN"),
          th.btnS("Volver a cursos", key=f"{p}BACK"),
          sg.Push(),
@@ -624,6 +676,9 @@ def _resumen(w, st, totals):
 
 def run():
     th.dpi_aware()
+    # los "Key Errors" diagnosticadores de FreeSimpleGUI abren un popup que BLOQUEA la
+    # app; en producción, en consola basta. (Los KeyError reales siguen elevando)
+    sg.SUPPRESS_ERROR_POPUPS = True
     st = {"session": None, "user": "", "groups": None, "excluded": [], "ferr": None,
           "root": DEFAULT_OUTPUT, "views": {}, "cur": None, "nc": 1, "body": None}
     w = _make_window()

@@ -3,6 +3,9 @@
 # (location negativa), lee con timeout y cierra. Atrapa kwargs mal usados en tiempo real.
 import FreeSimpleGUI as sg
 
+# el popup diagnosticador de key-errors bloquea el autochequeo; en consola basta
+sg.SUPPRESS_ERROR_POPUPS = True
+
 import utp_scraper.ui_theme as th
 import utp_scraper.ui_gui as g
 from utp_scraper.core import group_courses_by_period
