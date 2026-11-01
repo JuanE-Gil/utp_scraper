@@ -31,3 +31,8 @@ descargas_utp/
 
 # Workspace de superpowers (scratch, no versionar)
 .superpowers/
+
+# Entradas del generador de assets (regenerables: npm pack lucide-static)
+package/
+lucide-static-*.tgz
+
