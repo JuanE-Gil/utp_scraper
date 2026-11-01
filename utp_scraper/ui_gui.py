@@ -95,7 +95,7 @@ def _make_window():
          [sg.Column([footer], background_color=th.BG, pad=(0, 8), expand_x=True)]],
         size=(1040, 720), resizable=True, margins=(24, 16),
         enable_close_attempted_event=True, finalize=True)
-    w.set_min_size((860, 600))
+    w.set_min_size((860, 680))
     return w
 
 
@@ -269,7 +269,7 @@ def _rows_cursos(st, cp):
             f"(sin identificador válido): {names}", estado=th.WARN)])
 
     scroll = sg.Column(list_rows, scrollable=True, vertical_scroll_only=True,
-                       size=(940, 460), expand_x=True, expand_y=True,
+                       size=(940, 400), expand_x=True, expand_y=True,
                        sbar_trough_color=th.SURFACE_ALT, sbar_arrow_color=th.INK2)
     return [
         [th.ttl("Tus cursos"), sg.Push(), th.btnT("Actualizar", key=f"{cp}REFRESH")],
@@ -414,8 +414,9 @@ def _apply_filter(w, st, p, query):
 
 def _rows_descarga(p):
     def bar(k):
+        # expand_x: la pista llena el ancho de la tarjeta (r4: banda blanca muerta)
         return sg.ProgressBar(max_value=1, bar_color=(th.BLUE, th.BAR_TRACK),
-                              size=(430, 12), key=k, pad=(0, 4))
+                              size=(430, 12), key=k, pad=(0, 4), expand_x=True)
 
     chips = [th.chip(f"0 · {lbl}", (th.BORDER, th.INK3), key=f"{p}CH{i}")
              for i, (_k, _t, lbl, _e) in enumerate(COUNTERS)]
@@ -541,22 +542,31 @@ def _rows_resumen(st, p, totals):
     err_n = totals.get("error", 0)
     title = "Descarga completada con errores" if err_n else "Descarga completada"
     rows = [
-        [th.ttl(title)],  # nivel A: sin icono; color lo cuenta el bloque de cifras
-        [th.capt(f"{len(st.get('selection') or [])} cursos procesados",
-                 p=(0, (0, 12)))],
+        [th.ttl(title)],  # nivel A: sin icono; el color lo dan los estados
+        [th.capt(f"{len(st.get('selection') or [])} cursos procesados en "
+                 f"{os.path.basename(os.path.abspath(st['root']))}",
+                 tc=th.INK2, p=(0, (0, 16)))],
     ]
-    figs, tabs = [], []
-    for i, (k, lbl, _c, est) in enumerate(COUNTERS):
-        zero = totals[k] == 0
-        fig = th.txt(str(totals[k]), font=th.FIG,
-                     tc=th.INK3 if zero else est[1], p=(0, 4))
-        tab = th.capt(lbl, tc=th.INK2 if zero else est[1], p=(0, 0))
-        figs.append(fig)
-        tabs.append(tab)
-    inner = [sg.Column([figs], background_color=th.SURFACE, pad=(12, 8)),
-             sg.Column([tabs], background_color=th.SURFACE, pad=(12, 0))]
-    rows.append([sg.Column([inner], background_color=th.BORDER, pad=(1, 1))])
 
+    def stat(k, lbl, est):
+        """Columna apilada: cifra 22pt + etiqueta debajo, centrada."""
+        zero = totals[k] == 0
+        tc = th.INK3 if zero else est[1]
+        col_rows = [[th.txt(str(totals[k]), font=th.FIG, tc=tc,
+                            just="center", p=(0, (2, 2)))]]
+        for word in lbl.replace("por formato", "por\nformato").split("\n"):
+            col_rows.append([th.capt(word, tc=tc, just="center", p=(0, 0))])
+        return sg.Column(col_rows, pad=(36, 8))
+
+    cards = []
+    for k, lbl, _c, est in COUNTERS:
+        cards.append(stat(k, lbl, est))
+    stats = [sg.Push(), sg.Column([[sg.Push(), *cards, sg.Push()]],
+                                  background_color=th.SURFACE, pad=(24, 16)),
+             sg.Push()]
+    rows.append([sg.Column([stats], background_color=th.BORDER, pad=(1, 1),
+                           expand_x=True)])
+    # nota de contexto: qué significa cada cifra (solo si hubo actividad mixta)
     if err_n:
         err_rows = [[th.capt("— " + s, tc=th.ERR[1], p=(0, 2))]
                     for s in (st.get("errores") or [])[-30:]]
@@ -565,12 +575,13 @@ def _rows_resumen(st, p, totals):
                                          scrollable=True, vertical_scroll_only=True,
                                          size=(560, min(20 * max(len(err_rows), 1), 180)),
                                          visible=False))],
-            [sg.Push(), th.btnT(f"Ver errores ({err_n})", k=f"{p}ERBT"), sg.Push()],
+            [sg.Push(), th.btnT(f"Ver errores ({err_n})", key=f"{p}ERBT"), sg.Push()],
         ]
 
     rows += [
         [th.txt("Carpeta:", p=(0, (16, 4))),
-         th.capt(os.path.abspath(st["root"]), tc=th.INK2, p=(8, (16, 4)))],
+         th.capt(os.path.abspath(st["root"]), tc=th.INK2, expand_x=True,
+                 p=(8, (16, 4)))],
         [th.btnP("Abrir carpeta", key=f"{p}OPEN"),
          th.btnS("Volver a cursos", key=f"{p}BACK"),
          sg.Push(),

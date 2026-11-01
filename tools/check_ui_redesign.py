@@ -119,6 +119,15 @@ g._sync_counter(w, st, cp)
 for kchip in ("-STEP0-", "-STEP1-", "-ST-", "-SESS-", f"{cp}SEL",
               f"{cp}DL", f"{cp}BQ", f"{cp}ROOT"):
     assert kchip in w.AllKeysDict, kchip
+
+# 7) barra de accion visible sin bajar: DL dentro del alto por defecto (720)
+#    ventana fuera de pantalla: solo los deltas relativos son fiables
+dlw = w[f"{cp}DL"].widget
+root = w.TKroot
+dl_rel_bottom = (dlw.winfo_rooty() - root.winfo_rooty()) + dlw.winfo_height()
+assert dl_rel_bottom <= root.winfo_height() - 16, \
+    f"Descargar bajo el pliegue ({dl_rel_bottom}px de {root.winfo_height()})"
+print("accion OK — boton Descargar visible sin scroll")
 w.read(timeout=300)
 w.close()
 print("window OK — tema, marco, pasos, chip y vista Cursos montados")
